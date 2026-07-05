@@ -1,16 +1,33 @@
 'use client'
 
 import { useLocale } from 'next-intl'
-import { usePathname, useRouter } from '@/i18n/navigation'
+import { useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 
 export function LanguageSwitcher() {
   const locale = useLocale()
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = usePathname() // returns /ar/dashboard
 
   const switchLocale = (nextLocale: string) => {
-    router.replace(pathname, { locale: nextLocale })
+    if (nextLocale === locale) return
+
+    // Strip current locale prefix → /dashboard
+    const locales = routing.locales as readonly string[]
+    let strippedPath = pathname
+    for (const l of locales) {
+      if (strippedPath.startsWith(`/${l}/`)) {
+        strippedPath = strippedPath.slice(`/${l}`.length)
+        break
+      } else if (strippedPath === `/${l}`) {
+        strippedPath = '/'
+        break
+      }
+    }
+
+    // Build new path with next locale prefix
+    router.push(`/${nextLocale}${strippedPath}`)
   }
 
   return (

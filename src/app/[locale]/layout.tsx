@@ -28,10 +28,7 @@ const cairo = Cairo({
 })
 
 export const metadata: Metadata = {
-  title: {
-    default: 'wacrm',
-    template: '%s — wacrm',
-  },
+  title: { default: 'wacrm', template: '%s — wacrm' },
   description: 'Self-hostable CRM template for WhatsApp.',
   robots: { index: false, follow: false },
   icons: { icon: [{ url: '/icon' }] },
@@ -56,7 +53,6 @@ const THEME_BOOT_SCRIPT = `
     var THEMES = ${JSON.stringify(THEME_IDS)};
     var savedTheme = localStorage.getItem(THEME_KEY);
     d.dataset.theme = THEMES.indexOf(savedTheme) !== -1 ? savedTheme : THEME_DEFAULT;
-
     var MODE_KEY = ${JSON.stringify(MODE_STORAGE_KEY)};
     var MODE_DEFAULT = ${JSON.stringify(DEFAULT_MODE)};
     var MODES_LIST = ${JSON.stringify(MODES)};
@@ -86,9 +82,7 @@ export default async function LocaleLayout({
       dir={isRTL ? 'rtl' : 'ltr'}
       data-theme={DEFAULT_THEME}
       data-mode={DEFAULT_MODE}
-      className={`${
-        isRTL ? cairo.variable : inter.variable
-      } h-full antialiased`}
+      className={`${isRTL ? cairo.variable : inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -98,11 +92,7 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
       </head>
-      <body
-        className={`min-h-full bg-background text-foreground ${
-          isRTL ? 'font-arabic' : 'font-sans'
-        }`}
-      >
+      <body className={`min-h-full bg-background text-foreground ${isRTL ? 'font-arabic' : 'font-sans'}`}>
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             {children}

@@ -10,13 +10,11 @@ export function LanguageSwitcher() {
   const pathname = usePathname()
 
   const switchLocale = (nextLocale: string) => {
-    // Replace current locale prefix in the path
     const locales = routing.locales as readonly string[]
     const currentPrefix = `/${locale}`
     const nextPath = locales.some(l => pathname.startsWith(`/${l}`))
       ? pathname.replace(currentPrefix, `/${nextLocale}`)
       : `/${nextLocale}${pathname}`
-
     router.push(nextPath)
   }
 

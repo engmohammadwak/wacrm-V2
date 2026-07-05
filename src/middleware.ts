@@ -6,15 +6,13 @@ import { routing } from './i18n/routing'
 const intlMiddleware = createIntlMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
-  // ── 1. i18n: detect locale and redirect if needed ──────────────────
-  // Skip i18n for API routes and static files
   const { pathname } = request.nextUrl
   const isApiRoute = pathname.startsWith('/api/')
   const isStaticFile = /\.(.+)$/.test(pathname)
 
+  // ── 1. i18n middleware (skip API & static files) ─────────────────────
   if (!isApiRoute && !isStaticFile) {
     const intlResponse = intlMiddleware(request)
-    // If intl wants to redirect (e.g. /dashboard → /en/dashboard), honour it
     if (intlResponse.status !== 200) return intlResponse
   }
 
@@ -49,8 +47,7 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Helper: strip locale prefix to get the clean pathname
-  // e.g. /ar/dashboard → /dashboard
+  // Strip locale prefix to get clean pathname (/ar/dashboard → /dashboard)
   const locales = routing.locales as readonly string[]
   const pathnameWithoutLocale = locales.reduce(
     (p, locale) => p.replace(new RegExp(`^/${locale}`), '') || '/',

@@ -18,7 +18,15 @@
     "email": "Email",
     "phone": "Phone",
     "date": "Date",
-    "settings": "Settings"
+    "settings": "Settings",
+    "profile": "Profile",
+    "signOut": "Sign out"
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "agent": "Agent",
+    "viewer": "Viewer"
   },
   "auth": {
     "login": "Login",
@@ -40,10 +48,13 @@
   "nav": {
     "dashboard": "Dashboard",
     "inbox": "Inbox",
+    "notifications": "Notifications",
     "contacts": "Contacts",
     "pipelines": "Pipelines",
     "broadcasts": "Broadcasts",
     "automations": "Automations",
+    "flows": "Flows",
+    "agents": "AI Agents",
     "settings": "Settings"
   },
   "dashboard": {

@@ -5,19 +5,42 @@ import { routing } from './i18n/routing'
 
 const intlMiddleware = createIntlMiddleware(routing)
 
+const locales = routing.locales as readonly string[]
+
+function stripLocale(pathname: string) {
+  return (
+    locales.reduce(
+      (p, locale) => p.replace(new RegExp(`^/${locale}(?=/|$)`), '') || '/',
+      pathname
+    )
+  )
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isApiRoute = pathname.startsWith('/api/')
   const isStaticFile = /\.(.+)$/.test(pathname)
 
   // ── 1. i18n middleware (skip API & static files) ─────────────────────
+  let intlResponse: NextResponse | null = null
   if (!isApiRoute && !isStaticFile) {
-    const intlResponse = intlMiddleware(request)
+    intlResponse = intlMiddleware(request) as NextResponse
+    // If intl wants to redirect (e.g. / → /en) honour it immediately
     if (intlResponse.status !== 200) return intlResponse
   }
 
   // ── 2. Supabase auth ───────────────────────────────────────────────
-  let supabaseResponse = NextResponse.next({ request })
+  // Start from intlResponse so its cookies/headers are preserved
+  let supabaseResponse = intlResponse
+    ? NextResponse.next({ request, headers: intlResponse.headers })
+    : NextResponse.next({ request })
+
+  // Copy cookies set by intl (NEXT_LOCALE etc.) into supabaseResponse
+  if (intlResponse) {
+    intlResponse.cookies.getAll().forEach((c) =>
+      supabaseResponse.cookies.set(c)
+    )
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,10 +52,16 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          const next = intlResponse
+            ? NextResponse.next({ request, headers: intlResponse.headers })
+            : NextResponse.next({ request })
+          if (intlResponse) {
+            intlResponse.cookies.getAll().forEach((c) => next.cookies.set(c))
+          }
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            next.cookies.set(name, value, options)
           )
+          supabaseResponse = next
         },
       },
     }
@@ -47,20 +76,17 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Strip locale prefix to get clean pathname (/ar/dashboard → /dashboard)
-  const locales = routing.locales as readonly string[]
-  const pathnameWithoutLocale = locales.reduce(
-    (p, locale) => p.replace(new RegExp(`^/${locale}`), '') || '/',
-    pathname
-  )
+  const pathnameWithoutLocale = stripLocale(pathname)
+  const currentLocale = locales.includes(pathname.split('/')[1])
+    ? pathname.split('/')[1]
+    : routing.defaultLocale
+  const localePrefix = `/${currentLocale}`
 
   // Auth pages — redirect to dashboard if already logged in
   const authPages = ['/login', '/signup', '/forgot-password']
   if (user && authPages.includes(pathnameWithoutLocale)) {
     const url = request.nextUrl.clone()
     const inviteToken = request.nextUrl.searchParams.get('invite')
-    const locale = pathname.split('/')[1]
-    const localePrefix = locales.includes(locale) ? `/${locale}` : ''
     if (inviteToken && ['/login', '/signup'].includes(pathnameWithoutLocale)) {
       url.pathname = `${localePrefix}/join/${encodeURIComponent(inviteToken)}`
       url.search = ''
@@ -75,8 +101,6 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
   if (!user && protectedPaths.some(p => pathnameWithoutLocale.startsWith(p))) {
     const url = request.nextUrl.clone()
-    const locale = pathname.split('/')[1]
-    const localePrefix = locales.includes(locale) ? `/${locale}` : ''
     url.pathname = `${localePrefix}/login`
     return withRefreshedCookies(NextResponse.redirect(url))
   }

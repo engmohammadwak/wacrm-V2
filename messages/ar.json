@@ -1,0 +1,78 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "search": "بحث",
+    "loading": "جاري التحميل...",
+    "noResults": "لا توجد نتائج",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "next": "التالي",
+    "close": "إغلاق",
+    "actions": "الإجراءات",
+    "status": "الحالة",
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "date": "التاريخ",
+    "settings": "الإعدادات"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "signup": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "rememberMe": "تذكرني",
+    "noAccount": "ليس لديك حساب؟",
+    "haveAccount": "لديك حساب بالفعل؟",
+    "loginTitle": "مرحباً بعودتك",
+    "signupTitle": "إنشاء حسابك",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "passwordPlaceholder": "أدخل كلمة المرور"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "inbox": "صندوق الوارد",
+    "contacts": "جهات الاتصال",
+    "pipelines": "مسارات المبيعات",
+    "broadcasts": "الرسائل الجماعية",
+    "automations": "الأتمتة",
+    "settings": "الإعدادات"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "welcome": "مرحباً",
+    "overview": "نظرة عامة"
+  },
+  "contacts": {
+    "title": "جهات الاتصال",
+    "addContact": "إضافة جهة اتصال",
+    "editContact": "تعديل جهة الاتصال",
+    "deleteContact": "حذف جهة الاتصال",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "noContacts": "لا توجد جهات اتصال بعد. أضف أول جهة اتصال للبدء."
+  },
+  "inbox": {
+    "title": "صندوق الوارد",
+    "noMessages": "لا توجد رسائل بعد",
+    "typeMessage": "اكتب رسالة...",
+    "send": "إرسال"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "theme": "المظهر",
+    "profile": "الملف الشخصي",
+    "team": "الفريق",
+    "billing": "الفواتير",
+    "integrations": "التكاملات"
+  }
+}

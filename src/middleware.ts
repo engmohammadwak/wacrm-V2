@@ -1,7 +1,24 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import createIntlMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
+
+const intlMiddleware = createIntlMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
+  // ── 1. i18n: detect locale and redirect if needed ──────────────────
+  // Skip i18n for API routes and static files
+  const { pathname } = request.nextUrl
+  const isApiRoute = pathname.startsWith('/api/')
+  const isStaticFile = /\.(.+)$/.test(pathname)
+
+  if (!isApiRoute && !isStaticFile) {
+    const intlResponse = intlMiddleware(request)
+    // If intl wants to redirect (e.g. /dashboard → /en/dashboard), honour it
+    if (intlResponse.status !== 200) return intlResponse
+  }
+
+  // ── 2. Supabase auth ───────────────────────────────────────────────
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -13,7 +30,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -25,16 +42,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // getUser() transparently refreshes an expired access token, which
-  // ROTATES the refresh token and writes the new cookies onto
-  // `supabaseResponse` via setAll() above. Any response we return in
-  // place of `supabaseResponse` (every redirect / JSON branch below)
-  // is a fresh object that does NOT carry those Set-Cookie headers, so
-  // the rotated token never reaches the browser. The next request then
-  // replays the old, now-consumed refresh token, the refresh fails, and
-  // the session wedges — the user gets a broken reload after idling and
-  // can only recover by manually clearing cookies (issue #288). Copy the
-  // refreshed cookies onto whatever response we hand back to fix that.
   const withRefreshedCookies = <T extends NextResponse>(response: T): T => {
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       response.cookies.set(cookie)
@@ -42,44 +49,44 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Auth pages - redirect to dashboard if already logged in.
-  // Exception: when an invite token is in the query string we
-  // send the already-signed-in user to /join/<token> instead so
-  // they can accept the invitation in one click. Without this,
-  // a forwarded invite link to someone who's already signed in
-  // would silently drop them on /dashboard.
-  if (user && (
-    request.nextUrl.pathname === '/login' ||
-    request.nextUrl.pathname === '/signup' ||
-    request.nextUrl.pathname === '/forgot-password'
-  )) {
+  // Helper: strip locale prefix to get the clean pathname
+  // e.g. /ar/dashboard → /dashboard
+  const locales = routing.locales as readonly string[]
+  const pathnameWithoutLocale = locales.reduce(
+    (p, locale) => p.replace(new RegExp(`^/${locale}`), '') || '/',
+    pathname
+  )
+
+  // Auth pages — redirect to dashboard if already logged in
+  const authPages = ['/login', '/signup', '/forgot-password']
+  if (user && authPages.includes(pathnameWithoutLocale)) {
     const url = request.nextUrl.clone()
     const inviteToken = request.nextUrl.searchParams.get('invite')
-    if (
-      inviteToken &&
-      (request.nextUrl.pathname === '/login' ||
-        request.nextUrl.pathname === '/signup')
-    ) {
-      url.pathname = `/join/${encodeURIComponent(inviteToken)}`
+    const locale = pathname.split('/')[1]
+    const localePrefix = locales.includes(locale) ? `/${locale}` : ''
+    if (inviteToken && ['/login', '/signup'].includes(pathnameWithoutLocale)) {
+      url.pathname = `${localePrefix}/join/${encodeURIComponent(inviteToken)}`
       url.search = ''
     } else {
-      url.pathname = '/dashboard'
+      url.pathname = `${localePrefix}/dashboard`
       url.search = ''
     }
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
-  // Protected pages - redirect to login if not authenticated
+  // Protected pages — redirect to login if not authenticated
   const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
-  if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
+  if (!user && protectedPaths.some(p => pathnameWithoutLocale.startsWith(p))) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    const locale = pathname.split('/')[1]
+    const localePrefix = locales.includes(locale) ? `/${locale}` : ''
+    url.pathname = `${localePrefix}/login`
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
   // API routes that need auth (not webhooks)
-  if (!user && request.nextUrl.pathname.startsWith('/api/whatsapp/') &&
-      !request.nextUrl.pathname.includes('/webhook')) {
+  if (!user && pathname.startsWith('/api/whatsapp/') &&
+      !pathname.includes('/webhook')) {
     return withRefreshedCookies(
       NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     )
